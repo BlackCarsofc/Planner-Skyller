@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PaymentProvider {
+  PIX
+  PAYPAL
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  APPROVED
+  REJECTED
+  FAILED
+}
+
+enum PlannerEntryType {
+  CALENDAR
+  GOAL
+  FINANCE
+  READING
+  TRAVEL
+  ROUTINE
+  NOTE
+}
+
+model User {
+  id            String          @id @default(cuid())
+  name          String
+  email         String          @unique
+  passwordHash  String
+  role          Role            @default(USER)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  payments      Payment[]
+  premiumAccess PremiumAccess?
+  plannerEntries PlannerEntry[]
+}
+
+model Payment {
+  id            String          @id @default(cuid())
+  userId        String
+  provider      PaymentProvider
+  status        PaymentStatus   @default(PENDING)
+  amountInCents Int
+  currency      String          @default("BRL")
+  externalId    String?
+  qrCodeText    String?
+  qrCodeImage   String?
+  metadataJson  String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PremiumAccess {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  active      Boolean   @default(false)
+  approvedBy  String?
+  approvedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PlannerEntry {
+  id          String            @id @default(cuid())
+  userId      String
+  title       String
+  content     String
+  type        PlannerEntryType
+  month       String?
+  premiumOnly Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
